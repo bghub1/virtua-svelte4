@@ -2,54 +2,63 @@
   import { styleToString } from "./utils";
   import Virtualizer from "./Virtualizer.svelte";
   import type { VListProps, VListHandle } from "./VList.type";
+  import type { HTMLAttributes } from 'svelte/elements';
 
   interface Props extends VListProps<T> {}
+  type RestProps = Omit<Props, keyof VListProps<T>> & HTMLAttributes<HTMLDivElement>;
 
-  let {
-    data,
-    getKey,
-    overscan,
-    itemSize,
-    shift,
-    horizontal,
-    children,
-    onscroll,
-    onscrollend,
-    ...rest
-  }: Props = $props();
+  export let data: Props['data'];
+  export let getKey: Props['getKey'];
+  export let overscan: Props['overscan'];
+  export let itemSize: Props['itemSize'];
+  export let shift: Props['shift'];
+  export let horizontal: Props['horizontal'];
+  export let children: Props['children'];
+  export let onscroll: Props['onscroll'];
+  export let onscrollend: Props['onscrollend'];
+  export let rest: RestProps;
 
-  let ref: Virtualizer<T> = $state()!;
+  let ref: Virtualizer<T>;
 
-  export const getScrollOffset = (() =>
-    ref.getScrollOffset()) satisfies VListHandle["getScrollOffset"] as VListHandle["getScrollOffset"];
-  export const getScrollSize = (() =>
-    ref.getScrollSize()) satisfies VListHandle["getScrollSize"] as VListHandle["getScrollSize"];
-  export const getViewportSize = (() =>
-    ref.getViewportSize()) satisfies VListHandle["getViewportSize"] as VListHandle["getViewportSize"];
-  export const findStartIndex = (() =>
-    ref.findStartIndex()) satisfies VListHandle["findStartIndex"] as VListHandle["findStartIndex"];
-  export const findEndIndex = (() =>
-    ref.findEndIndex()) satisfies VListHandle["findEndIndex"] as VListHandle["findEndIndex"];
-  export const getItemOffset = ((...args) =>
-    ref.getItemOffset(
-      ...args
-    )) satisfies VListHandle["getItemOffset"] as VListHandle["getItemOffset"];
-  export const getItemSize = ((...args) =>
-    ref.getItemSize(
-      ...args
-    )) satisfies VListHandle["getItemSize"] as VListHandle["getItemSize"];
-  export const scrollToIndex = ((...args) =>
-    ref.scrollToIndex(
-      ...args
-    )) satisfies VListHandle["scrollToIndex"] as VListHandle["scrollToIndex"];
-  export const scrollTo = ((...args) =>
-    ref.scrollTo(
-      ...args
-    )) satisfies VListHandle["scrollTo"] as VListHandle["scrollTo"];
-  export const scrollBy = ((...args) =>
-    ref.scrollBy(
-      ...args
-    )) satisfies VListHandle["scrollBy"] as VListHandle["scrollBy"];
+  export function getScrollOffset() {
+    return ref.getScrollOffset();
+  }
+
+  export function getScrollSize() {
+    return ref.getScrollSize();
+  }
+
+  export function getViewportSize() {
+    return ref.getViewportSize();
+  }
+
+  export function findStartIndex() {
+    return ref.findStartIndex();
+  }
+
+  export function findEndIndex() {
+    return ref.findEndIndex();
+  }
+
+  export function getItemOffset(index: number) {
+    return ref.getItemOffset(index);
+  }
+
+  export function getItemSize(index: number) {
+    return ref.getItemSize(index);
+  }
+
+  export function scrollToIndex(index: number, options?: ScrollToOptions) {
+    return ref.scrollToIndex(index, options);
+  }
+
+  export function scrollTo(offset: number, options?: ScrollToOptions) {
+    return ref.scrollTo(offset, options);
+  }
+
+  export function scrollBy(delta: number, options?: ScrollToOptions) {
+    return ref.scrollBy(delta, options);
+  }
 
   const viewportStyle = styleToString({
     display: horizontal ? "inline-block" : "block",
@@ -64,7 +73,7 @@
   @component
   Virtualized list component. See {@link VListProps} and {@link VListHandle}.
 -->
-<div {...rest} style="{viewportStyle} {rest.style || ''}">
+<div {...rest} style={`${viewportStyle} ${rest.style || ''}`}>
   <Virtualizer
     bind:this={ref}
     {data}

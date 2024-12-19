@@ -1,4 +1,4 @@
-<script lang="ts" generics="T">
+<script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import {
     ACTION_ITEMS_LENGTH_CHANGE,
@@ -20,17 +20,15 @@
 
   interface Props extends WindowVirtualizerProps<T> {}
 
-  let {
-    data,
-    getKey = defaultGetKey,
-    overscan,
-    itemSize,
-    shift = false,
-    horizontal = false,
-    children,
-    onscroll,
-    onscrollend,
-  }: Props = $props();
+  export let data: T[];
+  export let getKey = defaultGetKey;
+  export let overscan;
+  export let itemSize;
+  export let shift = false;
+  export let horizontal = false;
+  export let children;
+  export let onscroll;
+  export let onscrollend;
 
   const store = createVirtualStore(
     data.length,
@@ -47,7 +45,6 @@
   });
 
   const unsubscribeOnScroll = store.$subscribe(UPDATE_SCROLL_EVENT, () => {
-    // https://github.com/inokawa/virtua/discussions/580
     onscroll && onscroll();
   });
   const unsubscribeOnScrollEnd = store.$subscribe(
@@ -57,14 +54,14 @@
     }
   );
 
-  let containerRef: HTMLDivElement | undefined = $state();
+  let containerRef: HTMLDivElement | undefined;
 
-  let rerender: StateVersion = $state(store.$getStateVersion());
+  let rerender: StateVersion = store.$getStateVersion();
 
-  let range = $derived(rerender && store.$getRange());
-  let isScrolling = $derived(rerender && store.$isScrolling());
-  let totalSize = $derived(rerender && store.$getTotalSize());
-  let jumpCount = $derived(rerender && store.$getJumpCount());
+  let range = store.$getRange();
+  let isScrolling = store.$isScrolling();
+  let totalSize = store.$getTotalSize();
+  let jumpCount = store.$getJumpCount();
 
   onMount(() => {
     resizer.$observeRoot(containerRef!);
@@ -78,38 +75,31 @@
     scroller.$dispose();
   });
 
-  $effect.pre(() => {
-    if (data.length !== store.$getItemsLength()) {
-      store.$update(ACTION_ITEMS_LENGTH_CHANGE, [data.length, shift]);
-    }
-  });
+  $: if (data.length !== store.$getItemsLength()) {
+    store.$update(ACTION_ITEMS_LENGTH_CHANGE, [data.length, shift]);
+  }
 
   let prevJumpCount: number | undefined;
-  $effect(() => {
-    if (prevJumpCount === jumpCount) return;
-    prevJumpCount = jumpCount;
-    scroller.$fixScrollJump();
+  $: {
+    if (prevJumpCount !== jumpCount) {
+      prevJumpCount = jumpCount;
+      scroller.$fixScrollJump();
+    }
+  }
+
+  export const findStartIndex = store.$findStartIndex;
+  export const findEndIndex = store.$findEndIndex;
+  export const scrollToIndex = scroller.$scrollToIndex;
+
+  let containerStyle = styleToString({
+    "overflow-anchor": "none",
+    flex: "none",
+    position: "relative",
+    visibility: "hidden",
+    width: horizontal ? totalSize + "px" : "100%",
+    height: horizontal ? "100%" : totalSize + "px",
+    "pointer-events": isScrolling ? "none" : undefined,
   });
-
-  export const findStartIndex =
-    store.$findStartIndex satisfies WindowVirtualizerHandle["findStartIndex"] as WindowVirtualizerHandle["findStartIndex"];
-  export const findEndIndex =
-    store.$findEndIndex satisfies WindowVirtualizerHandle["findEndIndex"] as WindowVirtualizerHandle["findEndIndex"];
-  export const scrollToIndex =
-    scroller.$scrollToIndex satisfies WindowVirtualizerHandle["scrollToIndex"] as WindowVirtualizerHandle["scrollToIndex"];
-
-  let containerStyle = $derived(
-    styleToString({
-      // contain: "content",
-      "overflow-anchor": "none", // opt out browser's scroll anchoring because it will conflict to scroll anchoring of virtualizer
-      flex: "none", // flex style can break layout
-      position: "relative",
-      visibility: "hidden", // TODO replace with other optimization methods
-      width: horizontal ? totalSize + "px" : "100%",
-      height: horizontal ? "100%" : totalSize + "px",
-      "pointer-events": isScrolling ? "none" : undefined,
-    })
-  );
 </script>
 
 <!-- 
@@ -124,8 +114,8 @@
       {item}
       {index}
       as="div"
-      offset={rerender && store.$getItemOffset(index)}
-      hide={rerender && store.$isUnmeasuredItem(index)}
+      offset={store.$getItemOffset(index)}
+      hide={store.$isUnmeasuredItem(index)}
       {horizontal}
       resizer={resizer.$observeItem}
     />
